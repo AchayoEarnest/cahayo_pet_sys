@@ -1,3 +1,4 @@
 from django.apps import AppConfig
-class StationsConfig
-    name = 'apps.stations'
+class StationsConfig(AppConfig):
+    name = "apps.stations"
+    default_auto_field = "django.db.models.BigAutoField"

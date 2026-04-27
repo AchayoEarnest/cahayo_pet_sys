@@ -1,3 +1,4 @@
 from django.apps import AppConfig
-class PumpsConfig
-    name = 'apps.pumps'
+class PumpsConfig(AppConfig):
+    name = "apps.pumps"
+    default_auto_field = "django.db.models.BigAutoField"

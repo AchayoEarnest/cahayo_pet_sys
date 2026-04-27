@@ -9,28 +9,20 @@ whitenoise==6.6.0
 
 # Database
 psycopg2-binary==2.9.9
-django-redis==5.4.0
 
-# Async / Queue
+# Cache / Queue
+django-redis==5.4.0
 celery==5.3.6
 django-celery-results==2.5.1
 django-celery-beat==2.6.0
-gevent==24.2.1
 redis==5.0.3
 
 # HTTP
 requests==2.31.0
-urllib3==2.2.1
-
-# M-Pesa / Auth
-cryptography==42.0.5
 
 # Notifications
 africastalking==1.2.8
 
-# Production
-gunicorn==22.0.0
-
-# Utils
+# Media
 Pillow==10.3.0
 python-dateutil==2.9.0

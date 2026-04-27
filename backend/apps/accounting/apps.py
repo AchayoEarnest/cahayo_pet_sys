@@ -1,3 +1,4 @@
 from django.apps import AppConfig
-class AccountingConfig
-    name = 'apps.accounting'
+class AccountingConfig(AppConfig):
+    name = "apps.accounting"
+    default_auto_field = "django.db.models.BigAutoField"

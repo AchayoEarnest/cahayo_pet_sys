@@ -1,3 +1,4 @@
 from django.apps import AppConfig
-class MpesaConfig
-    name = 'apps.mpesa'
+class MpesaConfig(AppConfig):
+    name = "apps.mpesa"
+    default_auto_field = "django.db.models.BigAutoField"
