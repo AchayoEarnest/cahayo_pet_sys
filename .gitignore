@@ -1,0 +1,157 @@
+# =========================
+
+# PYTHON / DJANGO BACKEND
+
+# =========================
+
+**pycache**/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+
+# Virtual environments
+
+venv/
+.venv/
+env/
+
+# Django
+
+*.log
+*.pot
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+logs/
+
+# =========================
+
+# ENVIRONMENT VARIABLES
+
+# =========================
+
+.env
+.env.*
+!.env.example
+
+# =========================
+
+# MACHINE LEARNING (HEAVY FILES)
+
+# =========================
+
+# Models & datasets
+
+*.pkl
+*.h5
+*.hdf5
+*.pt
+*.pth
+*.joblib
+*.onnx
+*.csv
+*.parquet
+*.feather
+*.zip
+*.tar
+*.gz
+
+# Project-specific ML folders
+
+ml/data/
+ml/notebooks/
+ml/trained_models/
+backend/ml_engine/models/
+
+# =========================
+
+# NODE / NEXT.JS FRONTEND
+
+# =========================
+
+node_modules/
+.next/
+out/
+.npm
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+
+/frontend/node_modules/
+/frontend/.next/
+frontend/out/
+frontend/.npm
+*.tsbuildinfo
+next-env.d.ts
+coverage/
+# =========================
+
+# DOCKER
+
+# =========================
+
+docker/ssl/
+*.log
+*.pid
+*.seed
+
+# =========================
+
+# SYSTEM FILES
+
+# =========================
+
+.DS_Store
+Thumbs.db
+
+# =========================
+
+# IDEs / EDITORS
+
+# =========================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+
+# TEST / COVERAGE
+
+# =========================
+
+.coverage
+htmlcov/
+.pytest_cache/
+coverage.xml
+
+# =========================
+
+# MISC LARGE FILES
+
+# =========================
+
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.pdf
+*.pptx
+
+# =========================
+
+# OPTIONAL: KEEP STRUCTURE
+
+# =========================
+
+!ml/data/.gitkeep
+!ml/trained_models/.gitkeep

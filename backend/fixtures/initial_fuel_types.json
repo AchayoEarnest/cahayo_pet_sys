@@ -1,0 +1,46 @@
+[
+  {
+    "model": "stations.fueltype",
+    "pk": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+    "fields": {
+      "name": "Petrol",
+      "code": "PMS",
+      "color": "#3b82f6",
+      "unit": "L",
+      "density": "0.720"
+    }
+  },
+  {
+    "model": "stations.fueltype",
+    "pk": "b2c3d4e5-f6a7-8901-bcde-f12345678901",
+    "fields": {
+      "name": "Diesel",
+      "code": "AGO",
+      "color": "#f59e0b",
+      "unit": "L",
+      "density": "0.840"
+    }
+  },
+  {
+    "model": "stations.fueltype",
+    "pk": "c3d4e5f6-a7b8-9012-cdef-123456789012",
+    "fields": {
+      "name": "Kerosene",
+      "code": "IK",
+      "color": "#10b981",
+      "unit": "L",
+      "density": "0.800"
+    }
+  },
+  {
+    "model": "stations.fueltype",
+    "pk": "d4e5f6a7-b8c9-0123-def0-234567890123",
+    "fields": {
+      "name": "LPG",
+      "code": "LPG",
+      "color": "#8b5cf6",
+      "unit": "kg",
+      "density": null
+    }
+  }
+]
