@@ -2,14 +2,15 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { reportsApi } from "@/lib/api";
-import { formatCurrency, formatLitres, formatNumber, fillLevelColor } from "@/lib/utils";
+import { formatCurrency, formatLitres, formatNumber, fillLevelColor, formatDate } from "@/lib/utils";
 import {
-  TrendingUp, TrendingDown, Fuel, Gauge, Clock,
-  AlertTriangle, ArrowUpRight, ArrowDownRight, RefreshCw
+  TrendingUp, Fuel, Gauge, Clock,
+  AlertTriangle, ArrowUpRight, ArrowDownRight, RefreshCw,
+  BarChart3,
 } from "lucide-react";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
+  Tooltip, ResponsiveContainer, PieChart, Pie, Cell,
 } from "recharts";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
@@ -86,7 +87,7 @@ export default function DashboardPage() {
   const { data: kpi, isLoading, refetch, dataUpdatedAt } = useQuery<KPIDashboard>({
     queryKey: ["dashboard"],
     queryFn: () => reportsApi.dashboard().then((r) => r.data),
-    refetchInterval: 60_000, // Auto-refresh every 60 seconds
+    refetchInterval: 60_000,
   });
 
   const { data: perfData } = useQuery({
@@ -169,7 +170,7 @@ export default function DashboardPage() {
           title="Month-to-Date Revenue"
           value={formatCurrency(mtd?.revenue ?? 0)}
           sub={`${formatLitres(mtd?.litres ?? 0)} sold`}
-          icon={BarChart3 as React.ElementType}
+          icon={BarChart3}
           accent="emerald"
         />
       </div>
@@ -235,7 +236,7 @@ export default function DashboardPage() {
                     outerRadius={80}
                     paddingAngle={3}
                   >
-                    {paymentBreakdown.map((_, i) => (
+                    {paymentBreakdown.map((_: unknown, i: number) => (
                       <Cell key={i} fill={PAYMENT_COLORS[i % PAYMENT_COLORS.length]} />
                     ))}
                   </Pie>
@@ -243,7 +244,7 @@ export default function DashboardPage() {
                 </PieChart>
               </ResponsiveContainer>
               <div className="space-y-2 mt-2">
-                {paymentBreakdown.map((item, i) => (
+                {paymentBreakdown.map((item: { payment_method: string; total: number }, i: number) => (
                   <div key={i} className="flex items-center justify-between text-sm">
                     <div className="flex items-center gap-2">
                       <div
@@ -301,19 +302,4 @@ export default function DashboardPage() {
       )}
     </div>
   );
-}
-
-// Missing import
-function BarChart3({ className }: { className?: string }) {
-  return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <rect x="18" y="3" width="4" height="18" rx="1" />
-      <rect x="10" y="8" width="4" height="13" rx="1" />
-      <rect x="2" y="13" width="4" height="8" rx="1" />
-    </svg>
-  );
-}
-
-function formatDate(d: string): string {
-  return new Date(d).toLocaleDateString("en-KE", { month: "short", day: "numeric" });
 }

@@ -6,22 +6,21 @@ import Link from "next/link";
 import { useAuthStore } from "@/store/authStore";
 import {
   LayoutDashboard, ArrowRightLeft, Fuel, Gauge, BarChart3,
-  Users, Settings, LogOut, ChevronRight, Bell, Wallet,
-  AlertTriangle, Menu
+  Users, Settings, LogOut, ChevronRight, Bell, Wallet, Menu,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { useState } from "react";
 
 const NAV_ITEMS = [
-  { href: "/dashboard",           label: "Dashboard",     icon: LayoutDashboard,  roles: ["admin","manager","attendant","accountant"] },
-  { href: "/dashboard/shifts",    label: "Shifts",        icon: ArrowRightLeft,   roles: ["admin","manager","attendant"] },
-  { href: "/dashboard/sales",     label: "Sales & POS",   icon: Fuel,             roles: ["admin","manager","attendant"] },
-  { href: "/dashboard/tanks",     label: "Fuel Tanks",    icon: Gauge,            roles: ["admin","manager"] },
-  { href: "/dashboard/reports",   label: "Reports",       icon: BarChart3,        roles: ["admin","manager","accountant"] },
-  { href: "/dashboard/accounting",label: "Accounting",    icon: Wallet,           roles: ["admin","accountant"] },
-  { href: "/dashboard/users",     label: "Staff",         icon: Users,            roles: ["admin","manager"] },
-  { href: "/dashboard/settings",  label: "Settings",      icon: Settings,         roles: ["admin"] },
+  { href: "/dashboard",            label: "Dashboard",   icon: LayoutDashboard, roles: ["admin","manager","attendant","accountant"] },
+  { href: "/dashboard/shifts",     label: "Shifts",      icon: ArrowRightLeft,  roles: ["admin","manager","attendant"] },
+  { href: "/dashboard/sales",      label: "Sales & POS", icon: Fuel,            roles: ["admin","manager","attendant"] },
+  { href: "/dashboard/tanks",      label: "Fuel Tanks",  icon: Gauge,           roles: ["admin","manager"] },
+  { href: "/dashboard/reports",    label: "Reports",     icon: BarChart3,       roles: ["admin","manager","accountant"] },
+  { href: "/dashboard/accounting", label: "Accounting",  icon: Wallet,          roles: ["admin","accountant"] },
+  { href: "/dashboard/users",      label: "Staff",       icon: Users,           roles: ["admin","manager"] },
+  { href: "/dashboard/settings",   label: "Settings",    icon: Settings,        roles: ["admin"] },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
