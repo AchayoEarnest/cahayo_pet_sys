@@ -242,3 +242,4 @@ LOGGING = {
         "apps.shifts": {"handlers": ["console"], "level": "INFO", "propagate": False},
     },
 }
+APPEND_SLASH = False
