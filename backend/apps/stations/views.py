@@ -71,3 +71,23 @@ class FuelPriceListCreateView(generics.ListCreateAPIView):
             station=self.request.user.station,
             is_current=True,
         ).select_related("fuel_type")
+
+
+class CurrentStationView(generics.RetrieveAPIView):
+    """Return the station assigned to the currently authenticated user."""
+    serializer_class = StationSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        user = self.request.user
+        if user.is_admin:
+            # Admins: return first active station or 404
+            from rest_framework.exceptions import NotFound
+            station = Station.objects.filter(is_active=True).first()
+            if not station:
+                raise NotFound("No stations configured.")
+            return station
+        if not user.station:
+            from rest_framework.exceptions import NotFound
+            raise NotFound("You are not assigned to a station.")
+        return user.station

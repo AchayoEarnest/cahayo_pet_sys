@@ -109,6 +109,10 @@ export const authApi = {
   changePassword: (old_password: string, new_password: string, confirm_new_password: string) =>
     api.post("/auth/change-password/", { old_password, new_password, confirm_new_password }),
   users: () => api.get("/auth/users/"),
+  createUser: (payload: object) => api.post("/auth/users/", payload),
+  updateUser: (id: string, payload: object) => api.patch(`/auth/users/${id}/`, payload),
+  deleteUser: (id: string) => api.delete(`/auth/users/${id}/`),
+  auditLogs: (params?: Record<string, string>) => api.get("/auth/audit-logs/", { params }),
 };
 
 // Shifts
@@ -133,7 +137,7 @@ export const tanksApi = {
   list: () => api.get("/tanks/"),
   detail: (id: string) => api.get(`/tanks/${id}/`),
   deliveries: (tankId: string) => api.get(`/tanks/${tankId}/deliveries/`),
-  addDelivery: (payload: object) => api.post("/tanks/deliveries/", payload),
+  addDelivery: (payload: object) => api.post("/tanks/simple-delivery/", payload),
   dipReadings: (tankId: string) => api.get(`/tanks/${tankId}/dip-readings/`),
 };
 
