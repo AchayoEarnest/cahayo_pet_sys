@@ -22,10 +22,13 @@ import {
   RefreshCw,
   User,
   Fuel,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Shift, Pump, Nozzle } from "@/types";
 import { cn } from "@/lib/utils";
+import { exportCSV, exportExcel, buildExportFilename, ExportRow } from "@/lib/export";
 
 // ── Open Shift Modal ──────────────────────────────────────────────────────────
 function OpenShiftModal({
@@ -296,7 +299,7 @@ function CloseShiftModal({
 // ── Shift Row ─────────────────────────────────────────────────────────────────
 function ShiftRow({ shift }: { shift: Shift }) {
   const [expanded, setExpanded] = useState(false);
-  const variance = parseFloat(shift.revenue_variance);
+  const variance = parseFloat(shift.revenue_variance ?? "0") || 0;
 
   return (
     <>
@@ -447,6 +450,62 @@ export default function ShiftsPage() {
           </p>
         </div>
         <div className="flex gap-3">
+          <button
+            onClick={() => {
+              const data: Shift[] = shifts ?? [];
+              if (!data.length) { toast.error("No shifts to export"); return; }
+              const rows: ExportRow[] = data.map((s) => ({
+                "Shift #": s.shift_number,
+                Date: s.shift_date,
+                Attendant: s.attendant_name,
+                Status: s.status,
+                "Opened At": formatDateTime(s.opened_at),
+                "Closed At": s.closed_at ? formatDateTime(s.closed_at) : "",
+                "Duration (h)": (s.duration_hours ?? 0).toFixed(1),
+                "Litres Sold": parseFloat(s.total_litres_sold || "0"),
+                "Expected Revenue (KES)": parseFloat(s.expected_revenue || "0"),
+                "Actual Revenue (KES)": parseFloat(s.actual_revenue || "0"),
+                "Variance (KES)": parseFloat(s.revenue_variance || "0"),
+                "Cash (KES)": parseFloat(s.total_cash || "0"),
+                "M-Pesa (KES)": parseFloat(s.total_mpesa || "0"),
+                "Card (KES)": parseFloat(s.total_card || "0"),
+                "Flagged": s.is_flagged ? "Yes" : "No",
+              }));
+              exportCSV(rows, buildExportFilename("shifts"));
+              toast.success(`Exported ${rows.length} shifts`);
+            }}
+            className="btn-secondary gap-1.5"
+          >
+            <Download className="w-4 h-4" /> CSV
+          </button>
+          <button
+            onClick={() => {
+              const data: Shift[] = shifts ?? [];
+              if (!data.length) { toast.error("No shifts to export"); return; }
+              const rows: ExportRow[] = data.map((s) => ({
+                "Shift #": s.shift_number,
+                Date: s.shift_date,
+                Attendant: s.attendant_name,
+                Status: s.status,
+                "Opened At": formatDateTime(s.opened_at),
+                "Closed At": s.closed_at ? formatDateTime(s.closed_at) : "",
+                "Duration (h)": (s.duration_hours ?? 0).toFixed(1),
+                "Litres Sold": parseFloat(s.total_litres_sold || "0"),
+                "Expected Revenue (KES)": parseFloat(s.expected_revenue || "0"),
+                "Actual Revenue (KES)": parseFloat(s.actual_revenue || "0"),
+                "Variance (KES)": parseFloat(s.revenue_variance || "0"),
+                "Cash (KES)": parseFloat(s.total_cash || "0"),
+                "M-Pesa (KES)": parseFloat(s.total_mpesa || "0"),
+                "Card (KES)": parseFloat(s.total_card || "0"),
+                "Flagged": s.is_flagged ? "Yes" : "No",
+              }));
+              exportExcel(rows, buildExportFilename("shifts"), "Shifts");
+              toast.success(`Exported ${rows.length} shifts`);
+            }}
+            className="btn-secondary gap-1.5"
+          >
+            <FileSpreadsheet className="w-4 h-4" /> Excel
+          </button>
           <button onClick={() => refetch()} className="btn-secondary">
             <RefreshCw className="w-4 h-4" />
           </button>
@@ -478,7 +537,7 @@ export default function ShiftsPage() {
             </p>
             <p className="text-xs text-emerald-600">
               Opened at {formatTime(activeShift.opened_at)} ·{" "}
-              {activeShift.duration_hours.toFixed(1)}h running
+              {(activeShift.duration_hours ?? 0).toFixed(1)}h running
             </p>
           </div>
           <div className="text-right">

@@ -6,11 +6,12 @@ import { shiftsApi, transactionsApi, mpesaApi, pumpsApi } from "@/lib/api";
 import { formatCurrency, formatLitres, paymentMethodBadge, formatDateTime } from "@/lib/utils";
 import {
   Banknote, Smartphone, CreditCard, Building2, Loader2,
-  CheckCircle2, XCircle, Clock, Fuel, Plus
+  CheckCircle2, XCircle, Clock, Fuel, Plus, Download, FileSpreadsheet
 } from "lucide-react";
 import { toast } from "sonner";
 import { Transaction, MpesaStatus } from "@/types";
 import { cn } from "@/lib/utils";
+import { exportCSV, exportExcel, buildExportFilename, ExportRow } from "@/lib/export";
 
 type PaymentMethod = "cash" | "mpesa" | "card" | "credit";
 
@@ -33,9 +34,9 @@ function MpesaStatusPoller({
   const { data } = useQuery({
     queryKey: ["mpesa-status", checkoutRequestId],
     queryFn: () => mpesaApi.checkStatus(checkoutRequestId).then((r) => r.data),
-    refetchInterval: (data) => {
+    refetchInterval: (query) => {
       const terminal = ["success", "failed", "cancelled", "timeout"];
-      return terminal.includes(data?.status) ? false : 3000;
+      return terminal.includes(query.state.data?.status) ? false : 3000;
     },
     enabled: !!checkoutRequestId,
   });
@@ -376,6 +377,52 @@ export default function SalesPage() {
                 <p className="text-xs text-gray-500 mt-0.5">
                   {txnsData?.length ?? 0} transactions · Total {formatCurrency(totalToday)}
                 </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    const rows: ExportRow[] = (txnsData ?? []).map((t: Transaction) => ({
+                      Reference: t.reference,
+                      "Fuel Type": t.fuel_type_name,
+                      "Litres": parseFloat(t.litres),
+                      "Price/L (KES)": parseFloat(t.price_per_litre),
+                      "Amount (KES)": parseFloat(t.amount),
+                      "Payment Method": t.payment_method,
+                      "Vehicle Reg": t.vehicle_reg || "",
+                      "Customer": t.customer_name || "",
+                      "Status": t.status,
+                      "Time": formatDateTime(t.created_at),
+                    }));
+                    if (!rows.length) { toast.error("No transactions to export"); return; }
+                    exportCSV(rows, buildExportFilename("shift_transactions"));
+                    toast.success(`Exported ${rows.length} transactions`);
+                  }}
+                  className="btn-secondary py-1 px-2 text-xs gap-1"
+                >
+                  <Download className="w-3 h-3" /> CSV
+                </button>
+                <button
+                  onClick={() => {
+                    const rows: ExportRow[] = (txnsData ?? []).map((t: Transaction) => ({
+                      Reference: t.reference,
+                      "Fuel Type": t.fuel_type_name,
+                      "Litres": parseFloat(t.litres),
+                      "Price/L (KES)": parseFloat(t.price_per_litre),
+                      "Amount (KES)": parseFloat(t.amount),
+                      "Payment Method": t.payment_method,
+                      "Vehicle Reg": t.vehicle_reg || "",
+                      "Customer": t.customer_name || "",
+                      "Status": t.status,
+                      "Time": formatDateTime(t.created_at),
+                    }));
+                    if (!rows.length) { toast.error("No transactions to export"); return; }
+                    exportExcel(rows, buildExportFilename("shift_transactions"), "Transactions");
+                    toast.success(`Exported ${rows.length} transactions`);
+                  }}
+                  className="btn-secondary py-1 px-2 text-xs gap-1"
+                >
+                  <FileSpreadsheet className="w-3 h-3" /> Excel
+                </button>
               </div>
             </div>
             <div className="overflow-y-auto max-h-[600px]">

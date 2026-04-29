@@ -8,7 +8,9 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend
 } from "recharts";
-import { Calendar, TrendingUp, Fuel, Users, AlertTriangle } from "lucide-react";
+import { Calendar, TrendingUp, Fuel, Users, AlertTriangle, Download, FileSpreadsheet } from "lucide-react";
+import { exportCSV, exportExcel, buildExportFilename, ExportRow } from "@/lib/export";
+import { toast } from "sonner";
 
 const TABS = ["daily", "performance", "fuel", "attendants"] as const;
 type Tab = typeof TABS[number];
@@ -42,6 +44,58 @@ export default function ReportsPage() {
     enabled: activeTab === "attendants",
   });
 
+  function handleExport(format: "csv" | "xlsx") {
+    let rows: ExportRow[] = [];
+    let fname = "";
+
+    if (activeTab === "daily" && daily) {
+      rows = (daily.fuel_breakdown ?? []).map((f: any) => ({
+        Date: daily.date,
+        "Fuel Type": f.fuel_type__name,
+        "Litres Sold": f.litres,
+        "Revenue (KES)": f.revenue,
+        "Transactions": f.count,
+      }));
+      fname = buildExportFilename("daily_report", date);
+    } else if (activeTab === "performance" && perf) {
+      rows = (Array.isArray(perf) ? perf : perf.shifts ?? []).map((s: any) => ({
+        Date: s.shift_date ?? s.date ?? "",
+        Attendant: s.attendant_name ?? "",
+        "Revenue (KES)": s.actual_revenue ?? s.revenue ?? 0,
+        "Expected (KES)": s.expected_revenue ?? 0,
+        "Litres Sold": s.total_litres_sold ?? s.litres ?? 0,
+        "Variance (KES)": s.revenue_variance ?? s.variance ?? 0,
+        "Flagged": s.is_flagged ? "Yes" : "No",
+      }));
+      fname = buildExportFilename("shift_performance");
+    } else if (activeTab === "fuel" && fuel) {
+      rows = (Array.isArray(fuel) ? fuel : fuel.variance ?? []).map((v: any) => ({
+        Date: v.date ?? date,
+        "Fuel Type": v.fuel_type__name ?? v.fuel_type ?? "",
+        "Expected (L)": v.expected_litres ?? 0,
+        "Actual (L)": v.actual_litres ?? 0,
+        "Variance (L)": v.variance_litres ?? v.variance ?? 0,
+        "Variance %": v.variance_percentage ?? 0,
+      }));
+      fname = buildExportFilename("fuel_variance", date);
+    } else if (activeTab === "attendants" && attendants) {
+      rows = (Array.isArray(attendants) ? attendants : attendants.attendants ?? []).map((a: any) => ({
+        Attendant: `${a.attendant__first_name ?? ""} ${a.attendant__last_name ?? ""}`.trim(),
+        Shifts: a.shifts ?? a.shift_count ?? 0,
+        "Revenue (KES)": a.revenue ?? 0,
+        "Litres Sold": a.litres ?? 0,
+        "Variance (KES)": a.variance ?? 0,
+        Flagged: a.flagged ?? 0,
+      }));
+      fname = buildExportFilename("attendant_performance");
+    }
+
+    if (!rows.length) { toast.error("No data to export"); return; }
+    if (format === "csv") exportCSV(rows, fname);
+    else exportExcel(rows, fname, "Report");
+    toast.success(`Exported ${rows.length} rows`);
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-3">
@@ -49,20 +103,29 @@ export default function ReportsPage() {
           <h1 className="text-xl font-bold text-gray-900">Reports & Analytics</h1>
           <p className="text-sm text-gray-500">Operational insights and financial summaries</p>
         </div>
-        {(activeTab === "daily" || activeTab === "fuel") ? (
-          <input
-            type="date"
-            className="input w-auto"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        ) : (
-          <select className="input w-auto" value={days} onChange={(e) => setDays(+e.target.value)}>
-            <option value={7}>Last 7 days</option>
-            <option value={14}>Last 14 days</option>
-            <option value={30}>Last 30 days</option>
-          </select>
-        )}
+        <div className="flex items-center gap-2 flex-wrap">
+          {(activeTab === "daily" || activeTab === "fuel") ? (
+            <input type="date" className="input w-auto" value={date} onChange={(e) => setDate(e.target.value)} />
+          ) : (
+            <select className="input w-auto" value={days} onChange={(e) => setDays(+e.target.value)}>
+              <option value={7}>Last 7 days</option>
+              <option value={14}>Last 14 days</option>
+              <option value={30}>Last 30 days</option>
+            </select>
+          )}
+          <button
+            onClick={() => handleExport("csv")}
+            className="btn-secondary gap-1.5 text-xs"
+          >
+            <Download className="w-3.5 h-3.5" /> CSV
+          </button>
+          <button
+            onClick={() => handleExport("xlsx")}
+            className="btn-secondary gap-1.5 text-xs"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5" /> Excel
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -128,7 +191,7 @@ export default function ReportsPage() {
                 {daily.attendant_performance.map((a) => (
                   <div key={a.attendant__id} className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold flex-shrink-0">
-                      {a.attendant__first_name[0]}{a.attendant__last_name[0]}
+                      {(a.attendant__first_name?.[0] ?? "?")}{(a.attendant__last_name?.[0] ?? "")}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-800">
@@ -207,7 +270,7 @@ export default function ReportsPage() {
                   <p className="text-sm text-gray-500">{tank.fuel_type}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-2xl font-bold text-gray-900">{tank.fill_percentage.toFixed(1)}%</p>
+                  <p className="text-2xl font-bold text-gray-900">{(tank.fill_percentage ?? 0).toFixed(1)}%</p>
                   {tank.is_low && <span className="badge-red">Low Stock</span>}
                 </div>
               </div>
@@ -267,7 +330,7 @@ export default function ReportsPage() {
                     <td className="table-cell">
                       <div className="flex items-center gap-2">
                         <div className="w-7 h-7 bg-brand-100 rounded-full flex items-center justify-center text-brand-700 text-xs font-bold">
-                          {a.attendant__first_name[0]}{a.attendant__last_name[0]}
+                          {(a.attendant__first_name?.[0] ?? "?")}{(a.attendant__last_name?.[0] ?? "")}
                         </div>
                         {a.attendant__first_name} {a.attendant__last_name}
                       </div>
