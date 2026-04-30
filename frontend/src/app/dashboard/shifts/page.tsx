@@ -490,10 +490,9 @@ function ShiftRow({ shift }: { shift: Shift }) {
         </td>
         <td className="table-cell">
           {shift.is_flagged && (
-            <AlertTriangle
-              className="w-4 h-4 text-amber-500"
-              title={shift.flag_reason}
-            />
+            <span title={shift.flag_reason}>
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+            </span>
           )}
         </td>
         <td className="table-cell text-gray-400">
