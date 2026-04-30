@@ -734,8 +734,8 @@ export default function ShiftsPage() {
                     "Time",
                     "",
                     "",
-                  ].map((h) => (
-                    <th key={h} className="table-header text-left">
+                  ].map((h, i) => (
+                    <th key={i} className="table-header text-left">
                       {h}
                     </th>
                   ))}

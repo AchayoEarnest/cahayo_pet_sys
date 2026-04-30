@@ -70,6 +70,7 @@ export const useShiftStore = create<ShiftState>((set, get) => ({
   },
 
   fetchTransactions: async (shiftId) => {
+    if (!shiftId) return;
     try {
       const { data } = await transactionsApi.list({ shift: shiftId });
       set({ transactions: data.results || data });

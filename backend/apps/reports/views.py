@@ -25,6 +25,8 @@ class DailySalesReportView(APIView):
     def get(self, request):
         report_date = request.query_params.get("date", str(timezone.localdate()))
         station = request.user.station
+        if station is None:
+            return Response({"detail": "You are not assigned to a station."}, status=400)
 
         # Shift summary
         shifts = Shift.objects.filter(station=station, shift_date=report_date)
@@ -246,6 +248,8 @@ class KPIDashboardView(APIView):
 
     def get(self, request):
         station = request.user.station
+        if station is None:
+            return Response({"detail": "You are not assigned to a station."}, status=400)
         today = timezone.localdate()
         yesterday = today - timedelta(days=1)
         month_start = today.replace(day=1)
