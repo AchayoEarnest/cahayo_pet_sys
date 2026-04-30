@@ -1,12 +1,13 @@
 """M-Pesa Serializers"""
 
+from decimal import Decimal
 from rest_framework import serializers
 from .models import MpesaTransaction
 
 
 class STKPushSerializer(serializers.Serializer):
     phone_number = serializers.CharField(max_length=20)
-    amount = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=1)
+    amount = serializers.DecimalField(max_digits=14, decimal_places=2, min_value=Decimal("1"))
     account_reference = serializers.CharField(max_length=12, required=False)
     description = serializers.CharField(max_length=13, required=False, default="Fuel Purchase")
     shift_id = serializers.UUIDField(required=False)

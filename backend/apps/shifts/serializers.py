@@ -1,5 +1,6 @@
 """Shift Serializers"""
 
+from decimal import Decimal
 from rest_framework import serializers
 from .models import Shift
 from apps.pumps.models import ShiftNozzleReading
@@ -7,19 +8,19 @@ from apps.pumps.models import ShiftNozzleReading
 
 class NozzleOpeningReadingSerializer(serializers.Serializer):
     nozzle_id = serializers.UUIDField()
-    opening_reading = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=0)
+    opening_reading = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal("0"))
 
 
 class NozzleClosingReadingSerializer(serializers.Serializer):
     nozzle_id = serializers.UUIDField()
-    closing_reading = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=0)
-    test_litres = serializers.DecimalField(max_digits=8, decimal_places=3, default=0, required=False)
+    closing_reading = serializers.DecimalField(max_digits=12, decimal_places=3, min_value=Decimal("0"))
+    test_litres = serializers.DecimalField(max_digits=8, decimal_places=3, default=Decimal("0"), required=False)
 
 
 class DipReadingInputSerializer(serializers.Serializer):
     tank_id = serializers.UUIDField()
-    dip_mm = serializers.DecimalField(max_digits=8, decimal_places=1, min_value=0)
-    litres = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=0)
+    dip_mm = serializers.DecimalField(max_digits=8, decimal_places=1, min_value=Decimal("0"))
+    litres = serializers.DecimalField(max_digits=12, decimal_places=2, min_value=Decimal("0"))
     book_stock = serializers.DecimalField(max_digits=12, decimal_places=2, required=False)
 
 
@@ -68,7 +69,8 @@ class ShiftSerializer(serializers.ModelSerializer):
         fields = [
             "id", "shift_number", "attendant", "attendant_name",
             "status", "opened_at", "closed_at", "shift_date",
-            "total_cash", "total_mpesa", "total_card", "total_credit",
+            "total_cash", "total_mpesa", "total_card", "total_credit", "total_voucher",
+            "cash_collected", "cash_variance",
             "expected_revenue", "actual_revenue", "revenue_variance",
             "variance_percentage", "total_litres_sold",
             "is_flagged", "flag_reason", "duration_hours",

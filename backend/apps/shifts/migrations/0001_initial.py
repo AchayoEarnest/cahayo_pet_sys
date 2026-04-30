@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
                     "shift_number",
                     models.CharField(
                         help_text="Human-readable shift ID e.g. NRB-2024-001-A",
-                        max_length=20,
+                        max_length=30,
                     ),
                 ),
                 (
@@ -75,6 +75,12 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "total_credit",
+                    models.DecimalField(
+                        decimal_places=2, default=Decimal("0.00"), max_digits=14
+                    ),
+                ),
+                (
+                    "total_voucher",
                     models.DecimalField(
                         decimal_places=2, default=Decimal("0.00"), max_digits=14
                     ),

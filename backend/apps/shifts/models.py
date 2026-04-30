@@ -23,7 +23,7 @@ class Shift(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     station = models.ForeignKey("stations.Station", on_delete=models.CASCADE, related_name="shifts")
-    shift_number = models.CharField(max_length=20, help_text="Human-readable shift ID e.g. NRB-2024-001-A")
+    shift_number = models.CharField(max_length=30, help_text="Human-readable shift ID e.g. NRB-2024-001-A")
 
     # Personnel
     attendant = models.ForeignKey(
