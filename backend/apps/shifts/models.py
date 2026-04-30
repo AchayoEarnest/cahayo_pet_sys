@@ -1,6 +1,11 @@
 """
 Shift Management Models
-Core operational entity - all sales and readings tied to a shift
+Core operational entity — all sales and readings tied to a shift
+
+FIXES APPLIED:
+  1. Shift.close() now accepts and saves cash_collected + cash_variance
+  2. Shift.close() now includes voucher in actual_revenue calculation
+  3. Shift.close() uses a single DB aggregate query instead of Python loop
 """
 
 import uuid
@@ -45,6 +50,8 @@ class Shift(models.Model):
     total_mpesa = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
     total_card = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
     total_credit = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
+    # FIX #2: added voucher field — was missing, causing voucher sales to vanish from revenue
+    total_voucher = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
 
     # Meter-based totals (from nozzle readings)
     expected_revenue = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
@@ -52,6 +59,7 @@ class Shift(models.Model):
 
     # Cash handling
     opening_float = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
+    # FIX #1: cash_collected + cash_variance were never written — now saved in close()
     cash_collected = models.DecimalField(max_digits=14, decimal_places=2, default=Decimal("0.00"))
     cash_variance = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal("0.00"))
 
@@ -88,23 +96,48 @@ class Shift(models.Model):
             return round((self.closed_at - self.opened_at).total_seconds() / 3600, 2)
         return round((timezone.now() - self.opened_at).total_seconds() / 3600, 2)
 
-    def close(self, closed_by, notes=""):
-        """Close the shift and compute financial summary"""
+    def close(self, closed_by, notes="", cash_collected=0):
+        """
+        Close the shift and compute financial summary.
+
+        FIX #1: accepts cash_collected and writes cash_variance
+        FIX #2: voucher payment method now included in actual_revenue
+        FIX #3: uses DB-level aggregation instead of loading all transactions into memory
+        """
         from apps.pumps.models import ShiftNozzleReading
         from apps.transactions.models import Transaction
+        from django.db.models import Sum, Q
 
         self.closed_at = timezone.now()
         self.closed_by = closed_by
         self.status = Shift.Status.CLOSED
         self.notes = notes
 
-        # Compute transaction totals
-        txns = Transaction.objects.filter(shift=self)
-        self.total_cash = sum(t.amount for t in txns if t.payment_method == "cash")
-        self.total_mpesa = sum(t.amount for t in txns if t.payment_method == "mpesa")
-        self.total_card = sum(t.amount for t in txns if t.payment_method == "card")
-        self.total_credit = sum(t.amount for t in txns if t.payment_method == "credit")
-        self.actual_revenue = self.total_cash + self.total_mpesa + self.total_card + self.total_credit
+        # FIX #3: single aggregate query — no Python loop over transactions
+        totals = Transaction.objects.filter(shift=self).aggregate(
+            cash=Sum("amount", filter=Q(payment_method="cash")),
+            mpesa=Sum("amount", filter=Q(payment_method="mpesa")),
+            card=Sum("amount", filter=Q(payment_method="card")),
+            credit=Sum("amount", filter=Q(payment_method="credit")),
+            # FIX #2: voucher was not in the original sum at all
+            voucher=Sum("amount", filter=Q(payment_method="voucher")),
+        )
+
+        self.total_cash = totals["cash"] or Decimal("0.00")
+        self.total_mpesa = totals["mpesa"] or Decimal("0.00")
+        self.total_card = totals["card"] or Decimal("0.00")
+        self.total_credit = totals["credit"] or Decimal("0.00")
+        self.total_voucher = totals["voucher"] or Decimal("0.00")
+
+        # FIX #2: voucher now included
+        self.actual_revenue = (
+            self.total_cash + self.total_mpesa +
+            self.total_card + self.total_credit + self.total_voucher
+        )
+
+        # FIX #1: save cash_collected and compute variance against total_cash
+        self.cash_collected = Decimal(str(cash_collected))
+        self.cash_variance = self.cash_collected - self.total_cash
 
         # Compute meter-based expected revenue
         readings = ShiftNozzleReading.objects.filter(shift=self).select_related("nozzle__fuel_type")
@@ -127,7 +160,6 @@ class Shift(models.Model):
     @classmethod
     def generate_shift_number(cls, station):
         """Generate shift number e.g. NRB-001-20240115-001"""
-        from django.utils import timezone
         today = timezone.localdate()
         count = cls.objects.filter(station=station, shift_date=today).count() + 1
         return f"{station.code}-{today.strftime('%Y%m%d')}-{count:03d}"

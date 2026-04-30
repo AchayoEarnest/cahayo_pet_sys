@@ -1,13 +1,17 @@
 """
 Shift Management Views
 Complete shift lifecycle: open → record → close → reconcile
+
+FIXES APPLIED:
+  4. CloseShiftView now passes cash_collected to shift.close()
+  5. CloseShiftView validates all opened nozzles have closing readings submitted
+  6. CurrentShiftView response shape documented (returns shift directly, not wrapped)
 """
 
 import logging
 from django.utils import timezone
 from django.db import transaction as db_transaction
 from rest_framework import generics, status
-from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
@@ -127,8 +131,26 @@ class CloseShiftView(APIView):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        # Update closing nozzle readings
         nozzle_readings = data.get("nozzle_readings", [])
+
+        # FIX #5: ensure every nozzle opened in this shift has a closing reading submitted
+        opened_nozzle_ids = set(
+            ShiftNozzleReading.objects.filter(shift=shift).values_list("nozzle_id", flat=True)
+        )
+        submitted_nozzle_ids = {str(r["nozzle_id"]) for r in nozzle_readings}
+        missing = opened_nozzle_ids - {str(n) for n in submitted_nozzle_ids}
+        if missing:
+            return Response(
+                {
+                    "detail": (
+                        f"{len(missing)} nozzle(s) opened at shift start are missing closing readings. "
+                        f"Missing nozzle IDs: {', '.join(missing)}"
+                    )
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Update closing nozzle readings
         for reading_data in nozzle_readings:
             try:
                 reading = ShiftNozzleReading.objects.get(
@@ -139,9 +161,11 @@ class CloseShiftView(APIView):
                 if reading_data["closing_reading"] < reading.opening_reading:
                     return Response(
                         {
-                            "detail": f"Closing reading ({reading_data['closing_reading']}) cannot be "
-                                      f"less than opening reading ({reading.opening_reading}) "
-                                      f"for nozzle {reading_data['nozzle_id']}."
+                            "detail": (
+                                f"Closing reading ({reading_data['closing_reading']}) cannot be "
+                                f"less than opening reading ({reading.opening_reading}) "
+                                f"for nozzle {reading_data['nozzle_id']}."
+                            )
                         },
                         status=status.HTTP_400_BAD_REQUEST
                     )
@@ -187,8 +211,12 @@ class CloseShiftView(APIView):
                 recorded_by=request.user,
             )
 
-        # Close the shift (calculates all variances)
-        shift.close(closed_by=request.user, notes=data.get("notes", ""))
+        # FIX #4: pass cash_collected so it gets saved on the shift record
+        shift.close(
+            closed_by=request.user,
+            notes=data.get("notes", ""),
+            cash_collected=data.get("cash_collected", 0),
+        )
 
         logger.info(
             f"Shift closed: {shift.shift_number} | "
@@ -197,7 +225,6 @@ class CloseShiftView(APIView):
             f"Flagged: {shift.is_flagged}"
         )
 
-        # Send flagged shift alert
         if shift.is_flagged:
             from apps.notifications.tasks import alert_shift_variance
             alert_shift_variance.delay(str(shift.id))
@@ -217,7 +244,6 @@ class ShiftListView(generics.ListAPIView):
             station=self.request.user.station
         ).select_related("attendant", "opened_by", "closed_by")
 
-        # Date filters
         date_from = self.request.query_params.get("date_from")
         date_to = self.request.query_params.get("date_to")
         if date_from:
@@ -225,7 +251,6 @@ class ShiftListView(generics.ListAPIView):
         if date_to:
             qs = qs.filter(shift_date__lte=date_to)
 
-        # Flagged only
         if self.request.query_params.get("flagged"):
             qs = qs.filter(is_flagged=True)
 
@@ -243,7 +268,16 @@ class ShiftDetailView(generics.RetrieveAPIView):
 
 
 class CurrentShiftView(APIView):
-    """Get the currently open shift for the authenticated user"""
+    """
+    Get the currently open shift for the authenticated user.
+
+    Response shape:
+      - If a shift exists  → returns the ShiftDetail object directly (NOT wrapped in {shift: ...})
+      - If no shift exists → returns {"detail": "No open shift found.", "shift": null}
+
+    Frontend must handle both shapes:
+      const shift = data.shift ?? (data.id ? data : null)
+    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
